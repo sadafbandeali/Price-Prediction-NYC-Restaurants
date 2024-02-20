@@ -1,0 +1,75 @@
+# Abstract:
+
+This data science project seeks to uncover what factors impact meal prices at New York City Italian restaurants, using reviews from Zagat. The reviews rate each restaurant on food, decor, and service from 0-30. By analyzing these ratings for 168 NYC Italian restaurants since 2001, the project aims to identify the main drivers of pricing. The goal is to gain insights that can inform dining choices for customers. Ultimately, the project strives to discern which quality elements, as judged by numeric ratings, have the biggest influence on the cost of a meal. Leveraging historical Zagat data, the analysis will elucidate the relationship between rated restaurant attributes like food, decor, and service, and the resulting prices diners pay.
+
+### Data Glossary:
+
+Cheap: is the restaurant considered cheap (1) or expensive (0)
+Food, Decor, Service: rating (0. . . 30) for these items, larger is better
+East: restaurant located east of the 5th Ave.
+
+```{r}
+# Reading the csv file and saving it as a new dataframe
+restaurant_df <- read.csv("/Users/sadafbandeali/Desktop/UW/Autumn'23/IMT 573/Final Exam/nyc-italian-cheap.csv", sep='\t')
+
+head(restaurant_df)
+
+# Sanity checks
+sum(is.na(restaurant_df$Restaurant))
+sum(is.na(restaurant_df$Food))
+sum(is.na(restaurant_df$Decor))
+sum(is.na(restaurant_df$Service))
+sum(is.na(restaurant_df$East))
+sum(is.na(restaurant_df$Cheap))
+```
+
+
+# Building a Logistic Regression Predictive Model
+```{r}
+# Creating a Logistic Regression model
+restaurant_significance_model <- glm(formula = Cheap ~ Food + Decor + Service + East, data = restaurant_df, family = "binomial")
+summary(restaurant_significance_model)
+
+me <- margins::margins(restaurant_significance_model)
+summary(me)
+
+# Create a new model with the only Decor and Food (because these are the only variables that are statistically significant)
+restaurant_model <- glm(formula = Cheap ~ Food + Decor, data = restaurant_df, family = "binomial")
+summary(restaurant_model)
+
+me_1 <- margins::margins(restaurant_model)
+summary(me_1)
+
+
+```
+# Explanation
+
+Decor: When the decor of a restaurant improves by one unit (say, from basic to upscale), the chances of it being considered "cheap" decrease by about 8.5%. This means that nicer decor is associated with a lower likelihood of the restaurant being perceived as inexpensive. And yes, this change is significant, suggesting that investing in better decor could impact how people perceive the restaurant's affordability.
+
+East (Location): If a restaurant is located east of 5th Ave compared to being west of it, there's a slight decrease of about 4.4% in the likelihood of it being considered "cheap." However, this change isn't statistically significant, meaning it's uncertain whether the location significantly affects perceptions of the restaurant's affordability. So, being on the east side might not really make a big difference in how people view the restaurant's prices.
+
+Food: Improving the quality of the food by one unit (for instance, from average to excellent) is linked with a decrease of about 6.4% in the likelihood of the restaurant being seen as "cheap." This suggests that better food quality tends to make people perceive the restaurant as less inexpensive. And yes, this change is significant, indicating that enhancing food quality could influence perceptions of affordability.
+
+Service: Interestingly, increasing the quality of service by one unit doesn't seem to have a noticeable impact on whether people perceive the restaurant as "cheap." The increase in the likelihood of it being seen as inexpensive is only about 0.6%, and this change isn't statistically significant. So, while good service is appreciated, it may not sway perceptions of affordability as much as other factors like decor and food quality do
+
+
+These results do align with common sense perception, because food is usually the star of any restaurant. The ingredients they use to make food is the single most important fixed cost for any restaurant, which they then translate to their customers. It seems fairly valid to claim that food would determine if the restaurant is cheap or not. Similarly, decor/ambiance of a restaurant determines if the food will be cheap. Restaurants spend a lot of money and time deciding on the ambiance and decor for their business, hence effecting how much they price the food they sell.
+
+## Predicting Restaurant Pricing using the Model
+```{r}
+# Predicting pricing for the a few restaurant - Assagio Ristorante
+AssagioRistorante <- data.frame(Food  = c(23), Decor = c(17))
+AssagioRistorantePrediction <- predict.glm(restaurant_model, newdata=AssagioRistorante, type = "response")
+print(AssagioRistorantePrediction)
+
+# Predicting pricing for the a few restaurant - Altura
+Altura <- data.frame(Food  = c(18), Decor = c(15))
+AlturaPrediction <- predict.glm(restaurant_model, newdata=Altura, type = "response")
+print(AlturaPrediction)
+
+```
+For Assagio Ristorante, our model predicts that there's an approximately 18.9% chance of it being considered "cheap," which implies an 81.1% chance of it being perceived as "expensive." When we evaluate this prediction using 0.5 as the midpoint, we find that our overall prediction leans towards Assagio not being perceived as cheap.
+
+Conversely, for Altura, our model predicts a substantially higher likelihood of approximately 88.4% for it to be considered "cheap," indicating a 11.6% chance of being perceived as "expensive." Again, using 0.5 as the midpoint, our overall prediction suggests that Altura is likely to be perceived as cheap.
+
+So, based on our model's predictions, Assagio Ristorante is more likely to be seen as expensive, while Altura is more likely to be perceived as cheap
